@@ -26,7 +26,7 @@ source ~/.bashrc
 # Alternative: System-wide install (requires sudo)
 sudo cp hackbelt /usr/local/bin/
 
-# Note : The files created for the tools will be stored per user in ~/.config/files
+# Note : The files created for the tools will be stored per user in ~/.config/hackbelt/files
 ```
 ## Usage 🚀
 ```
