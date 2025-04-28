@@ -78,3 +78,20 @@ nmap -sC -sV <target>
 - Can be noisy on monitored networks
 - Use -Pn for ping-blocked hosts
 ```
+## What can you do?
+1. Suggest Improvements
+2. I am planning on making some predefined entries for popular tools , so feel free to help me make them :)
+
+## How to Suggest Improvements
+1. For tool/command ideas:
+   - Open a [Discussion](https://github.com/moddedm/hackbelt/discussions/new/choose) under "Ideas"
+   - OR reply to the [Imporvement requests](https://github.com/moddedm/hackbelt/discussions/1) discussion
+
+2. For documentation fixes:
+   - Click "Edit this page" on any doc
+   - Submit via Pull Request
+
+3. Best practices:
+   - Search existing suggestions first
+   - Include use cases ("For CTFs when...")
+   - Reference similar tools if applicable
