@@ -1,0 +1,370 @@
+#!/usr/bin/env bash
+
+# HackBelt - Cybersecurity CTF Helper Tool
+# Author: moddedm
+# Version: 3.0
+
+# Configuration
+TOOL_DIR="${HOME}/.config/hackbelt/files"  # Linux/macOS standard
+mkdir -p "$TOOL_DIR"
+DEFAULT_FLAG="--all"
+EDITOR="${EDITOR:-nano}"
+COLOR_HEADER="\033[1;36m"  # Cyan
+COLOR_SECTION="\033[1;33m" # Yellow
+COLOR_SNIPPET="\033[1;32m" # Green
+COLOR_TAG="\033[1;35m"     # Purple
+COLOR_PROMPT="\033[1;34m"  # Blue
+COLOR_RESET="\033[0m"      # Reset
+CLIPBOARD_CMD="xclip -selection clipboard" # Change to "pbcopy" on macOS
+
+# Create files directory if it doesn't exist
+mkdir -p "$TOOL_DIR"
+
+# Check clipboard command availability
+if ! command -v xclip &> /dev/null && ! command -v pbcopy &> /dev/null; then
+    CLIPBOARD_CMD=""
+fi
+
+# Help function
+show_help() {
+    echo -e "${COLOR_HEADER}HackBelt - Cybersecurity CTF Helper Tool${COLOR_RESET}"
+    echo "Usage:"
+    echo "  hackbelt <tool> [flag] - Show information about a tool"
+    echo "  hackbelt --create <tool> - Create a new tool entry"
+    echo "  hackbelt --edit <tool> - Edit an existing tool entry"
+    echo "  hackbelt --delete <tool> - Delete a tool entry"
+    echo "  hackbelt --list [tag] - List all available tools (optionally filtered by tag)"
+    echo "  hackbelt --search <term> - Search across all tools"
+    echo "  hackbelt --tags - List all available tags"
+    echo ""
+    echo "Flags:"
+    echo "  --all      - Show all information (default)"
+    echo "  --brief    - Show only the brief description"
+    echo "  --ctf      - Show CTF-specific tips"
+    echo "  --snippet  - Show only the code snippet"
+    echo "  --flags    - Show only common flags/options"
+    echo "  --notes    - Show only the notes section"
+    echo "  --exec     - Execute the snippet (prompts for placeholders)"
+    echo "  --copy     - Copy the first snippet to clipboard"
+    echo ""
+    echo "Examples:"
+    echo "  hackbelt hydra"
+    echo "  hackbelt nmap --snippet --copy"
+    echo "  hackbelt --create sqlmap"
+    echo "  hackbelt --search 'brute force'"
+    echo "  hackbelt --list #web"
+}
+
+# Print section with color
+print_section() {
+    echo -e "\n${COLOR_SECTION}=== $1 ===${COLOR_RESET}"
+}
+
+# Standard template for new tools
+create_standard_template() {
+    local tool="$1"
+    local file="$2"
+    
+    cat > "$file" << EOL
+# Brief description:
+Brief description of what $tool does and its main purpose
+
+# Tags:
+#category #another_tag #useful_tag  # Add your tags here, space separated
+
+# CTF Tips:
+- Common CTF use cases for $tool
+- Special flags or techniques useful in CTFs
+- Any CTF-specific considerations
+
+# Snippet:
+# Most common basic usage (use <placeholders> for user input)
+$tool -p <ports> <target>
+
+# Useful variation
+$tool -sV -A -T4 <target>
+
+# Common Flags:
+- --help: Show help
+- -v: Verbose output
+- -q: Quiet mode
+- -o: Output file
+- Common $tool-specific flags
+
+# Notes:
+- Any important notes about $tool
+- Common pitfalls or warnings
+- Advanced techniques or combinations
+
+# Resources:
+- Official documentation: [URL]
+- Useful cheatsheet: [URL]
+- Relevant CTF writeup: [URL]
+EOL
+}
+
+# Function to extract placeholders from a snippet
+extract_placeholders() {
+    echo "$1" | grep -o '<[^>]*>' | sort -u
+}
+
+# Function to replace placeholders in a snippet
+replace_placeholders() {
+    local snippet="$1"
+    shift
+    local replacements=("$@")
+    
+    for replacement in "${replacements[@]}"; do
+        placeholder=$(echo "$replacement" | cut -d'=' -f1)
+        value=$(echo "$replacement" | cut -d'=' -f2-)
+        snippet=$(echo "$snippet" | sed "s/$placeholder/$value/g")
+    done
+    
+    echo "$snippet"
+}
+
+# Check if no arguments provided
+if [ $# -eq 0 ]; then
+    show_help
+    exit 1
+fi
+
+# Handle special commands
+case "$1" in
+    --help|-h)
+        show_help
+        exit 0
+        ;;
+    --create)
+        if [ -z "$2" ]; then
+            echo "Error: No tool name specified for creation."
+            exit 1
+        fi
+        tool_file="$TOOL_DIR/$2"
+        if [ -f "$tool_file" ]; then
+            echo "Error: Tool '$2' already exists."
+            exit 1
+        fi
+        
+        echo "Creating new tool entry: $2"
+        create_standard_template "$2" "$tool_file"
+        
+        echo "Tool entry created. You can now edit it with: hackbelt --edit $2"
+        $EDITOR "$tool_file"
+        exit 0
+        ;;
+    --edit)
+        if [ -z "$2" ]; then
+            echo "Error: No tool name specified for editing."
+            exit 1
+        fi
+        tool_file="$TOOL_DIR/$2"
+        if [ ! -f "$tool_file" ]; then
+            read -p "Tool '$2' doesn't exist. Create it? (y/n) " confirm
+            if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+                hackbelt --create "$2"
+                exit 0
+            else
+                exit 1
+            fi
+        fi
+        
+        $EDITOR "$tool_file"
+        exit 0
+        ;;
+    --delete)
+        if [ -z "$2" ]; then
+            echo "Error: No tool name specified for deletion."
+            exit 1
+        fi
+        tool_file="$TOOL_DIR/$2"
+        if [ ! -f "$tool_file" ]; then
+            echo "Error: Tool '$2' does not exist."
+            exit 1
+        fi
+        
+        read -p "Are you sure you want to delete the tool entry '$2'? (y/n) " confirm
+        if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+            rm "$tool_file"
+            echo "Tool entry '$2' deleted."
+        else
+            echo "Deletion cancelled."
+        fi
+        exit 0
+        ;;
+    --list)
+        if [ -n "$2" ]; then
+            if [[ "$2" == \#* ]]; then
+                echo -e "${COLOR_HEADER}Tools with tag $2:${COLOR_RESET}"
+                grep -l "$2" "$TOOL_DIR"/* | while read -r file; do
+                    tool_name=$(basename "$file")
+                    echo -e "  $tool_name"
+                done
+                exit 0
+            fi
+        fi
+        
+        echo -e "${COLOR_HEADER}Available tools:${COLOR_RESET}"
+        ls -1 "$TOOL_DIR" | sed 's/^/  /'
+        echo -e "\nUse 'hackbelt <tool> --brief' for quick descriptions"
+        echo "Filter by tag with: hackbelt --list #tag"
+        exit 0
+        ;;
+    --search)
+        if [ -z "$2" ]; then
+            echo "Error: No search term specified."
+            exit 1
+        fi
+        echo -e "${COLOR_HEADER}Search results for '$2':${COLOR_RESET}"
+        grep -ril "$2" "$TOOL_DIR" | while read -r file; do
+            tool_name=$(basename "$file")
+            echo -e "\n${COLOR_SECTION}${tool_name}${COLOR_RESET}"
+            grep -i "$2" "$file" | head -n 3 | sed 's/^/  /'
+        done
+        exit 0
+        ;;
+    --tags)
+        echo -e "${COLOR_HEADER}Available tags:${COLOR_RESET}"
+        # Extract tags, remove empty ones, and format nicely
+        grep -rh "#[a-zA-Z0-9_\-]*" "$TOOL_DIR" | 
+        grep -o "#[a-zA-Z0-9_\-]*" | 
+        grep -v "^#$" |  # This removes the empty # entries
+        sort -u | 
+        pr -3 -t -w 80  # Formats into 3 columns
+        exit 0
+        ;;
+esac
+
+# Normal tool lookup
+tool="$1"
+flag="${2:-$DEFAULT_FLAG}"
+tool_file="$TOOL_DIR/$tool"
+
+if [ ! -f "$tool_file" ]; then
+    echo "Error: Tool '$tool' not found."
+    echo "List available tools with: hackbelt --list"
+    echo "Create it with: hackbelt --create $tool"
+    exit 1
+fi
+
+# Function to get first snippet
+get_first_snippet() {
+    awk '/^# Snippet:/ {flag=1; next} /^# [A-Za-z]+:/ {flag=0} flag && /^[^#]/ {print; exit}' "$tool_file"
+}
+
+# Handle execution and clipboard flags
+case "$flag" in
+    --exec)
+        snippet=$(get_first_snippet)
+        if [ -z "$snippet" ]; then
+            echo "Error: No snippet found to execute."
+            exit 1
+        fi
+        
+        # Extract placeholders and prompt for values
+        placeholders=($(extract_placeholders "$snippet"))
+        replacements=()
+        
+        if [ ${#placeholders[@]} -gt 0 ]; then
+            echo -e "${COLOR_SECTION}The snippet contains placeholders that need values:${COLOR_RESET}"
+            echo -e "${COLOR_SNIPPET}$snippet${COLOR_RESET}"
+            echo ""
+            
+            for placeholder in "${placeholders[@]}"; do
+                read -p "${COLOR_PROMPT}Enter value for $placeholder: ${COLOR_RESET}" value
+                replacements+=("$placeholder=$value")
+            done
+            
+            # Replace placeholders in the snippet
+            snippet=$(replace_placeholders "$snippet" "${replacements[@]}")
+        fi
+        
+        echo -e "\n${COLOR_SECTION}Final command to execute:${COLOR_RESET}"
+        echo -e "${COLOR_SNIPPET}$snippet${COLOR_RESET}"
+        echo -e "\n${COLOR_SECTION}Press Enter to confirm or Ctrl+C to cancel...${COLOR_RESET}"
+        read -r
+        eval "$snippet"
+        exit $?
+        ;;
+    --copy)
+        snippet=$(get_first_snippet)
+        if [ -z "$snippet" ]; then
+            echo "Error: No snippet found to copy."
+            exit 1
+        fi
+        if [ -z "$CLIPBOARD_CMD" ]; then
+            echo "Error: No clipboard command available (install xclip or pbcopy)"
+            exit 1
+        fi
+        echo -e "${COLOR_SECTION}Copying to clipboard:${COLOR_RESET} ${COLOR_SNIPPET}$snippet${COLOR_RESET}"
+        echo "$snippet" | $CLIPBOARD_CMD
+        exit 0
+        ;;
+esac
+
+# Display the appropriate section based on the flag
+case "$flag" in
+    --all)
+        echo -e "${COLOR_HEADER}=== $tool ===${COLOR_RESET}"
+        # Process each section with compact spacing
+        current_section=""
+        while IFS= read -r line; do
+            if [[ "$line" =~ ^#\ ([A-Za-z\ ]+): ]]; then
+                # New section - only add newline if not first section
+                [[ -n "$current_section" ]] && echo
+                current_section="${BASH_REMATCH[1]}"
+                echo -e "${COLOR_SECTION}${current_section}:${COLOR_RESET}"
+            elif [[ -n "$line" && "$current_section" == "Snippet" ]]; then
+                # Snippet lines (non-empty, in Snippet section)
+                echo -e "  ${COLOR_SNIPPET}${line}${COLOR_RESET}"
+            elif [[ -n "$line" ]]; then
+                # Regular non-empty line
+                echo "  $line"
+            fi
+            # Skip empty lines
+        done < "$tool_file"
+        ;;
+    --brief)
+        print_section "Brief Description"
+        awk '/^# Brief description:/ {flag=1; next} /^# [A-Za-z]+:/ {flag=0} flag' "$tool_file"
+        ;;
+    --ctf)
+        print_section "CTF Tips"
+        awk '/^# CTF Tips:/ {flag=1; next} /^# [A-Za-z]+:/ {flag=0} flag' "$tool_file"
+        ;;
+    --snippet)
+        print_section "Snippets (Copy-paste ready)"
+        awk -v color_snippet="$COLOR_SNIPPET" -v color_reset="$COLOR_RESET" '
+            /^# Snippet:/ {flag=1; next} 
+            /^# [A-Za-z]+:/ {flag=0} 
+            flag {print color_snippet $0 color_reset}
+        ' "$tool_file"
+        ;;
+    --flags)
+        print_section "Common Flags/Options"
+        awk '/^# Common Flags:/ {flag=1; next} /^# [A-Za-z]+:/ {flag=0} flag' "$tool_file"
+        ;;
+    --notes)
+        print_section "Notes"
+        awk '/^# Notes:/ {flag=1; next} /^# [A-Za-z]+:/ {flag=0} flag' "$tool_file"
+        ;;
+    *)
+        echo "Error: Unknown flag '$flag'"
+        show_help
+        exit 1
+        ;;
+esac
+
+# Show copy/exec hints if showing snippets
+if [[ "$flag" == "--all" || "$flag" == "--snippet" ]]; then
+    snippet=$(get_first_snippet)
+    if [ -n "$snippet" ]; then
+        echo -e "\n${COLOR_SECTION}Quick Actions:${COLOR_RESET}"
+        echo "  hackbelt $tool --copy   # Copy first snippet to clipboard"
+        
+        # Only show exec hint if not running with --exec already
+        if [[ "$2" != "--exec" ]]; then
+            echo "  hackbelt $tool --exec   # Execute first snippet (will prompt for placeholders)"
+        fi
+    fi
+fi
