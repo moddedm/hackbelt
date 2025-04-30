@@ -2,19 +2,22 @@
 
 # HackBelt - Cybersecurity CTF Helper Tool
 # Author: moddedm
-# Version: 3.0
+# Version: 3.1
 
 # Configuration
 TOOL_DIR="${HOME}/.config/hackbelt/files"  # Linux/macOS standard
 mkdir -p "$TOOL_DIR"
+
 DEFAULT_FLAG="--all"
 EDITOR="${EDITOR:-nano}"
+
 COLOR_HEADER="\033[1;36m"  # Cyan
 COLOR_SECTION="\033[1;33m" # Yellow
 COLOR_SNIPPET="\033[1;32m" # Green
 COLOR_TAG="\033[1;35m"     # Purple
 COLOR_PROMPT="\033[1;34m"  # Blue
-COLOR_RESET="\033[0m"      # Reset
+COLOR_RESET="\033[0m"      # Reset (NOT FOR CUSTOMIZATION - EDITING THIS WILL BREAK TERMINAL COLORS)
+
 CLIPBOARD_CMD="xclip -selection clipboard" # Change to "pbcopy" on macOS
 
 # Create files directory if it doesn't exist
@@ -57,7 +60,7 @@ show_help() {
 
 # Print section with color
 print_section() {
-    echo -e "\n${COLOR_SECTION}=== $1 ===${COLOR_RESET}"
+    echo -e "${COLOR_SECTION}=== $1 ===${COLOR_RESET}"
 }
 
 # Standard template for new tools
@@ -70,7 +73,7 @@ create_standard_template() {
 Brief description of what $tool does and its main purpose
 
 # Tags:
-#category #another_tag #useful_tag  # Add your tags here, space separated
+#tag1 #tag2
 
 # CTF Tips:
 - Common CTF use cases for $tool
@@ -81,25 +84,13 @@ Brief description of what $tool does and its main purpose
 # Most common basic usage (use <placeholders> for user input)
 $tool -p <ports> <target>
 
-# Useful variation
-$tool -sV -A -T4 <target>
 
 # Common Flags:
 - --help: Show help
-- -v: Verbose output
-- -q: Quiet mode
-- -o: Output file
 - Common $tool-specific flags
 
 # Notes:
 - Any important notes about $tool
-- Common pitfalls or warnings
-- Advanced techniques or combinations
-
-# Resources:
-- Official documentation: [URL]
-- Useful cheatsheet: [URL]
-- Relevant CTF writeup: [URL]
 EOL
 }
 
@@ -271,7 +262,8 @@ case "$flag" in
             echo ""
             
             for placeholder in "${placeholders[@]}"; do
-                read -p "${COLOR_PROMPT}Enter value for $placeholder: ${COLOR_RESET}" value
+                echo -e "${COLOR_PROMPT}Enter value for $placeholder: ${COLOR_RESET}"
+                read value
                 replacements+=("$placeholder=$value")
             done
             
@@ -354,17 +346,3 @@ case "$flag" in
         exit 1
         ;;
 esac
-
-# Show copy/exec hints if showing snippets
-if [[ "$flag" == "--all" || "$flag" == "--snippet" ]]; then
-    snippet=$(get_first_snippet)
-    if [ -n "$snippet" ]; then
-        echo -e "\n${COLOR_SECTION}Quick Actions:${COLOR_RESET}"
-        echo "  hackbelt $tool --copy   # Copy first snippet to clipboard"
-        
-        # Only show exec hint if not running with --exec already
-        if [[ "$2" != "--exec" ]]; then
-            echo "  hackbelt $tool --exec   # Execute first snippet (will prompt for placeholders)"
-        fi
-    fi
-fi

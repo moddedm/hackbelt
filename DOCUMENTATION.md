@@ -91,6 +91,12 @@ HACKBELT COMPLETE USAGE GUIDE
 5.3 Configuration:
     - Tools stored in: ~/.config/hackbelt/files/
     - Colors customizable in script header
+    - The default flag is --all by default but it can also be changed in script header
+    - Tool files Directory can be changed in scipt header (TOOL_DIR variable) which is set to linux/MacOS standards by default
+
+5.4 Color Customization
+    - All colors are customizable by editing the script it self
+    - The color variables are defined at the header so feel free to try different colors
 
 6. TROUBLESHOOTING
 ------------------
@@ -144,8 +150,10 @@ HACKBELT COMPLETE USAGE GUIDE
     
 9.2 Using SSH Tool:
     hackbelt ssh --exec
-    > Enter <port>: 2222
-    > Enter <target>: 10.10.10.1
+    > Enter <port>:
+    2222
+    > Enter <target>: 
+    10.10.10.1
     > Confirm: ssh -p 2222 10.10.10.1 [Y/n]
 
 10. UNINSTALLATION
