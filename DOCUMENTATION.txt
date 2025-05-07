@@ -29,26 +29,23 @@ HACKBELT COMPLETE USAGE GUIDE
 3. TOOL MANAGEMENT
 ------------------
 3.1 File Format:
-    # Brief description: [Required]
-    Tool description
+    # Brief description:
+    - Tool description
     
-    # Tags: [Optional]
+    # Tags:
     #category #another_tag
     
-    # CTF Tips: [Optional]
+    # CTF Tips:
     - CTF-specific advice
     
-    # Snippet: [Recommended]
-    command -flags <placeholder>
+    # Snippet:
+    SNIPPET:<name of snippet>:command
     
-    # Common Flags: [Optional]
+    # Common Flags:
     - -v: Verbose mode
     
-    # Notes: [Optional]
-    Additional warnings/tips
-    
-    # Resources: [Optional]
-    - [URL] Documentation
+    # Notes:
+    Additional warnings/tips    
 
 3.2 Creating Tools:
     hackbelt --create <toolname>
@@ -112,8 +109,14 @@ HACKBELT COMPLETE USAGE GUIDE
 
 6.3 Wrong output of certain flags:
     - Make sure that every section is there even if it is empty
-    - hackbelt uses the name of the nest section to detect the end of the current so it needs to be there
+    - hackbelt uses regex to detect #<anything>: so do not put : at the end of any comment you make
     - this is on the list of improvements 
+
+6.4 sed: -e expression #1 error
+    - the used sed delimeter is determined per command to not have collisions , if you encounter this then it means
+      that your snippet has all of these '|' '@' '#' '%' '~' '^' ':' and your snippet will not be executed properly
+    - a command with all of these as a snippet for a simple entry is probably imposible but if this happens then 
+      unfortunately there is no fix for it currently and i am not planning on fixing it
 
 7. BEST PRACTICES
 -----------------

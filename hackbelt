@@ -2,7 +2,7 @@
 
 # HackBelt - Cybersecurity CTF Helper Tool
 # Author: moddedm
-# Version: 3.1
+# Version: 3.2
 
 # Configuration
 TOOL_DIR="${HOME}/.config/hackbelt/files"  # Linux/macOS standard
@@ -99,15 +99,28 @@ replace_placeholders() {
     local snippet="$1"
     shift
     local replacements=("$@")
-    
+
     for replacement in "${replacements[@]}"; do
         placeholder=$(echo "$replacement" | cut -d'=' -f1)
         value=$(echo "$replacement" | cut -d'=' -f2-)
-        snippet=$(echo "$snippet" | sed "s/$placeholder/$value/g")
+
+        # Try to find a delimiter not present in placeholder or value
+        for delim in '|' '@' '#' '%' '~' '^' ':'; do
+            if [[ "$placeholder$value" != *"$delim"* ]]; then
+                break
+            fi
+        done
+
+        # Escape special characters in the replacement value
+        safe_value=$(printf '%s' "$value" | sed 's/[\/&]/\\&/g')
+
+        # Perform the substitution safely
+        snippet=$(echo "$snippet" | sed "s${delim}${placeholder}${delim}${safe_value}${delim}g")
     done
-    
+
     echo "$snippet"
 }
+
 
 # Check if no arguments provided
 if [ $# -eq 0 ]; then
@@ -231,19 +244,48 @@ if [ ! -f "$tool_file" ]; then
     exit 1
 fi
 
-# Function to get first snippet
-get_first_snippet() {
-    awk '/^# Snippet:/ {flag=1; next} /^# [A-Za-z]+:/ {flag=0} flag && /^[^#]/ {print; exit}' "$tool_file"
-}
-
 # Handle execution and clipboard flags
 case "$flag" in
     --exec)
-        snippet=$(get_first_snippet)
-        if [ -z "$snippet" ]; then
+        # find snippets with regex
+        mapfile -t snippets < <(
+            awk 'match($0, /^SNIPPET:([^:]+):(.*)$/, m) { print m[1] }' $tool_file
+            )
+
+        if [ ${#snippets[@]} -eq 0 ]; then
             echo "Error: No snippet found to execute."
             exit 1
         fi
+
+        # lists found snippets    
+        echo -e "${COLOR_SECTION}Snippets found :${COLOR_RESET}"
+        count=0; 
+        for snippet in "${snippets[@]}"; do  
+            echo "$((++count)). $snippet"
+        done
+        
+        # reads snippet number
+        echo -e "${COLOR_PROMPT}Which snippet would you like to run: ${COLOR_RESET}"
+        read number
+
+        # Check if input is a number and within range
+        if ! [[ "$number" =~ ^[0-9]+$ ]]; then
+            echo "Invalid input: not a number."
+            exit 1
+        fi
+
+        if (( number < 1 || number > ${#snippets[@]} )); then
+            echo "Invalid input: number out of range (1 to ${#snippets[@]})."
+            exit 1
+        fi
+        
+        selected_snippet="${snippets[$((number - 1))]}"
+
+        snippet=$(awk -v name="$selected_snippet" '
+            match($0, "^SNIPPET:" name ":(.*)", m) {
+                print m[1]
+            }
+        ' "$tool_file")
         
         # Extract placeholders and prompt for values
         placeholders=($(extract_placeholders "$snippet"))
@@ -272,7 +314,45 @@ case "$flag" in
         exit $?
         ;;
     --copy)
-        snippet=$(get_first_snippet)
+        # find snippets with regex
+        mapfile -t snippets < <(
+            awk 'match($0, /^SNIPPET:([^:]+):(.*)$/, m) { print m[1] }' $tool_file
+            )
+
+        if [ ${#snippets[@]} -eq 0 ]; then
+            echo "Error: No snippet found to copy."
+            exit 1
+        fi
+
+        # lists found snippets    
+        echo -e "${COLOR_SECTION}Snippets found :${COLOR_RESET}"
+        count=0; 
+        for snippet in "${snippets[@]}"; do  
+            echo "$((++count)). $snippet"
+        done
+        
+        # reads snippet number
+        echo -e "${COLOR_PROMPT}Which snippet would you like to run: ${COLOR_RESET}"
+        read number
+
+        # Check if input is a number and within range
+        if ! [[ "$number" =~ ^[0-9]+$ ]]; then
+            echo "Invalid input: not a number."
+            exit 1
+        fi
+
+        if (( number < 1 || number > ${#snippets[@]} )); then
+            echo "Invalid input: number out of range (1 to ${#snippets[@]})."
+            exit 1
+        fi
+        
+        selected_snippet="${snippets[$((number - 1))]}"
+
+        snippet=$(awk -v name="$selected_snippet" '
+            match($0, "^SNIPPET:" name ":(.*)", m) {
+                print m[1]
+            }
+        ' "$tool_file")
         if [ -z "$snippet" ]; then
             echo "Error: No snippet found to copy."
             exit 1
@@ -321,7 +401,7 @@ case "$flag" in
         print_section "Snippets"
         awk -v color_snippet="$COLOR_SNIPPET" -v color_reset="$COLOR_RESET" '
             /^# Snippet:/ {flag=1; next} 
-            /^# [A-Za-z]+:/ {flag=0} 
+            /^# .+:$/ {flag=0}
             flag {print color_snippet $0 color_reset}
         ' "$tool_file"
         ;;
