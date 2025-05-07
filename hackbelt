@@ -20,9 +20,6 @@ COLOR_RESET="\033[0m"      # Reset (NOT FOR CUSTOMIZATION - EDITING THIS WILL BR
 
 CLIPBOARD_CMD="xclip -selection clipboard" # Change to "pbcopy" on macOS
 
-# Create files directory if it doesn't exist
-mkdir -p "$TOOL_DIR"
-
 # Check clipboard command availability
 if ! command -v xclip &> /dev/null && ! command -v pbcopy &> /dev/null; then
     CLIPBOARD_CMD=""
@@ -67,6 +64,7 @@ print_section() {
 create_standard_template() {
     local tool="$1"
     local file="$2"
+    # args ^^
     
     cat > "$file" << EOL
 # Brief description:
@@ -78,12 +76,9 @@ Brief description of what $tool does and its main purpose
 # CTF Tips:
 - Common CTF use cases for $tool
 - Special flags or techniques useful in CTFs
-- Any CTF-specific considerations
 
 # Snippet:
 # Most common basic usage (use <placeholders> for user input)
-$tool -p <ports> <target>
-
 
 # Common Flags:
 - --help: Show help
@@ -94,7 +89,7 @@ $tool -p <ports> <target>
 EOL
 }
 
-# Function to extract placeholders from a snippet
+# Function to extract placeholders from a snippet and sorts into individual lines
 extract_placeholders() {
     echo "$1" | grep -o '<[^>]*>' | sort -u
 }
@@ -137,7 +132,6 @@ case "$1" in
             exit 1
         fi
         
-        echo "Creating new tool entry: $2"
         create_standard_template "$2" "$tool_file"
         
         echo "Tool entry created. You can now edit it with: hackbelt --edit $2"
@@ -197,8 +191,7 @@ case "$1" in
         
         echo -e "${COLOR_HEADER}Available tools:${COLOR_RESET}"
         ls -1 "$TOOL_DIR" | sed 's/^/  /'
-        echo -e "\nUse 'hackbelt <tool> --brief' for quick descriptions"
-        echo "Filter by tag with: hackbelt --list #tag"
+        echo -e "\nFilter by tag with: hackbelt --list #tag"
         exit 0
         ;;
     --search)
@@ -325,7 +318,7 @@ case "$flag" in
         awk '/^# CTF Tips:/ {flag=1; next} /^# [A-Za-z]+:/ {flag=0} flag' "$tool_file"
         ;;
     --snippet)
-        print_section "Snippets (Copy-paste ready)"
+        print_section "Snippets"
         awk -v color_snippet="$COLOR_SNIPPET" -v color_reset="$COLOR_RESET" '
             /^# Snippet:/ {flag=1; next} 
             /^# [A-Za-z]+:/ {flag=0} 

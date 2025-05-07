@@ -110,6 +110,11 @@ HACKBELT COMPLETE USAGE GUIDE
     hackbelt --create test
     hackbelt test --all
 
+6.3 Wrong output of certain flags:
+    - Make sure that every section is there even if it is empty
+    - hackbelt uses the name of the nest section to detect the end of the current so it needs to be there
+    - this is on the list of improvements 
+
 7. BEST PRACTICES
 -----------------
 7.1 Tool Entries:
