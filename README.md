@@ -1,14 +1,21 @@
 # HackBelt 🛠️
+A command-line toolbelt for pentesters, CTF players and even normal users that organizes hacking tools, commands, and notes.
+## why ?
+Have you ever been in a position where you forgot the syntax of a tool so you need to go through man pages
+and help commands but they make you more confused or they waste a lot of time and then you proceed to try
+countless of times untill you finally find the right command even if you may have used it many times before ?
 
-**Your Cybersecurity Swiss Army Knife** - A command-line toolbelt for pentesters and CTF players that organizes hacking tools, commands, and notes.
+Well, With hackbelt you can just note everything you need and access them in seconds
 
 ## Features ✨
 - Instant command reference with `hackbelt <tool>`
-- CTF-specific tips with `--ctf` flag
-- Interactive execution with `--exec` (replaces `<placeholders>`)
-- Tag organization (`#web #crypto #bruteforce`)
-- Clipboard integration (`--copy`)
+- Access CTF-specific tips with `--ctf` flag
+- Interactive execution of customizable snippets with `--exec`
+- Tag Organization (`#web #crypto #bruteforce`)
 - Full search across tools (`--search`)
+- Clipboard integration (`--copy`)
+- Easy syntax with multiple modes (ex: --list = -l = list) (see Usage for more)
+- And many more to come soon
 
 ## Recommended Installation
 
@@ -30,23 +37,25 @@ sudo cp hackbelt /usr/local/bin/
 ```
 ## Usage 🚀
 ```
-Usage:
+Usage:  
   hackbelt <tool> [flag] - Show information about a tool
-  hackbelt --create <tool> - Create a new tool entry
-  hackbelt --edit <tool> - Edit an existing tool entry
-  hackbelt --delete <tool> - Delete a tool entry
-  hackbelt --list [tag] - List all available tools (optionally filtered by tag)
-  hackbelt --search <term> - Search across all tools
-  hackbelt --tags - List all available tags
+  hackbelt [--create -c create] <tool> - Create a new tool entry
+  hackbelt [--edit -e edit] <tool> - Edit an existing tool entry
+  hackbelt [--delete -d delete] <tool> - Delete a tool entry
+  hackbelt [--list -l list] [tag] - List all available tools (optionally filtered by tag)
+  hackbelt [--search -s search] <term> - Search across all tools
+  hackbelt [--tags -t tags] - List all available tags
+
 Flags:
-  --all      - Show all information (default)
-  --brief    - Show only the brief description
-  --ctf      - Show CTF-specific tips
-  --snippet  - Show only the code snippet
-  --flags    - Show only common flags/options
-  --notes    - Show only the notes section
-  --exec     - Execute the snippet (prompts for placeholders)
-  --copy     - Copy the first snippet to clipboard
+  [--all all]      - Show all information (default)
+  [--ctf ctf]     - Show CTF-specific tips
+  [--brief brief]   - Show only the brief description
+  [--snippets snippets] - Show only the code snippet
+  [--flags flags]  - Show only common flags/options
+  [--notes notes]   - Show only the notes section
+  [--exec exec run]    - Execute the snippet (prompts for placeholders)
+  [--copy -cp copy]    - Copy the first snippet to clipboard
+
 Examples:
   hackbelt hydra
   hackbelt nmap --snippet --copy
@@ -77,6 +86,8 @@ nmap -sC -sV <target>
 # Notes:
 - Can be noisy on monitored networks
 - Use -Pn for ping-blocked hosts
+
+# This is AI-generated ^^^
 ```
 ## What can you do?
 1. Suggest Improvements
