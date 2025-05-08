@@ -2,7 +2,7 @@
 
 # HackBelt - Cybersecurity CTF Helper Tool
 # Author: moddedm
-# Version: 3.2
+# Version: 3.3
 
 # Configuration
 TOOL_DIR="${HOME}/.config/hackbelt/files"  # Linux/macOS standard
@@ -30,22 +30,22 @@ show_help() {
     echo -e "${COLOR_HEADER}HackBelt - Cybersecurity CTF Helper Tool${COLOR_RESET}"
     echo "Usage:"
     echo "  hackbelt <tool> [flag] - Show information about a tool"
-    echo "  hackbelt --create <tool> - Create a new tool entry"
-    echo "  hackbelt --edit <tool> - Edit an existing tool entry"
-    echo "  hackbelt --delete <tool> - Delete a tool entry"
-    echo "  hackbelt --list [tag] - List all available tools (optionally filtered by tag)"
-    echo "  hackbelt --search <term> - Search across all tools"
-    echo "  hackbelt --tags - List all available tags"
+    echo "  hackbelt [--create -c create] <tool> - Create a new tool entry"
+    echo "  hackbelt [--edit -e edit] <tool> - Edit an existing tool entry"
+    echo "  hackbelt [--delete -d delete] <tool> - Delete a tool entry"
+    echo "  hackbelt [--list -l list] [tag] - List all available tools (optionally filtered by tag)"
+    echo "  hackbelt [--search -s search] <term> - Search across all tools"
+    echo "  hackbelt [--tags -t tags] - List all available tags"
     echo ""
     echo "Flags:"
-    echo "  --all      - Show all information (default)"
-    echo "  --brief    - Show only the brief description"
-    echo "  --ctf      - Show CTF-specific tips"
-    echo "  --snippet  - Show only the code snippet"
-    echo "  --flags    - Show only common flags/options"
-    echo "  --notes    - Show only the notes section"
-    echo "  --exec     - Execute the snippet (prompts for placeholders)"
-    echo "  --copy     - Copy the first snippet to clipboard"
+    echo "  [--all all]      - Show all information (default)"
+    echo "  [--ctf ctf]     - Show CTF-specific tips"
+    echo "  [--brief brief]   - Show only the brief description"
+    echo "  [--snippets snippets] - Show only the code snippet"
+    echo "  [--flags flags]  - Show only common flags/options"
+    echo "  [--notes notes]   - Show only the notes section"
+    echo "  [--exec exec run]    - Execute the snippet (prompts for placeholders)"
+    echo "  [--copy -cp copy]    - Copy the first snippet to clipboard"
     echo ""
     echo "Examples:"
     echo "  hackbelt hydra"
@@ -130,11 +130,11 @@ fi
 
 # Handle special commands
 case "$1" in
-    --help|-h)
+    --help|-h|help)
         show_help
         exit 0
         ;;
-    --create)
+    --create|-c|create)
         if [ -z "$2" ]; then
             echo "Error: No tool name specified for creation."
             exit 1
@@ -151,7 +151,7 @@ case "$1" in
         $EDITOR "$tool_file"
         exit 0
         ;;
-    --edit)
+    --edit|-e|edit)
         if [ -z "$2" ]; then
             echo "Error: No tool name specified for editing."
             exit 1
@@ -170,7 +170,7 @@ case "$1" in
         $EDITOR "$tool_file"
         exit 0
         ;;
-    --delete)
+    --delete|-d|delete)
         if [ -z "$2" ]; then
             echo "Error: No tool name specified for deletion."
             exit 1
@@ -190,7 +190,7 @@ case "$1" in
         fi
         exit 0
         ;;
-    --list)
+    --list|-d|list)
         if [ -n "$2" ]; then
             if [[ "$2" == \#* ]]; then
                 echo -e "${COLOR_HEADER}Tools with tag $2:${COLOR_RESET}"
@@ -207,7 +207,7 @@ case "$1" in
         echo -e "\nFilter by tag with: hackbelt --list #tag"
         exit 0
         ;;
-    --search)
+    --search|-s|search)
         if [ -z "$2" ]; then
             echo "Error: No search term specified."
             exit 1
@@ -220,7 +220,7 @@ case "$1" in
         done
         exit 0
         ;;
-    --tags)
+    --tags|-t|tags)
         echo -e "${COLOR_HEADER}Available tags:${COLOR_RESET}"
         # Extract tags, remove empty ones, and format nicely
         grep -rh "#[a-zA-Z0-9_\-]*" "$TOOL_DIR" | 
@@ -246,7 +246,7 @@ fi
 
 # Handle execution and clipboard flags
 case "$flag" in
-    --exec)
+    --exec|-x|exec|run)
         # find snippets with regex
         mapfile -t snippets < <(
             awk 'match($0, /^SNIPPET:([^:]+):(.*)$/, m) { print m[1] }' $tool_file
@@ -313,7 +313,7 @@ case "$flag" in
         eval "$snippet"
         exit $?
         ;;
-    --copy)
+    --copy|-cp|copy)
         # find snippets with regex
         mapfile -t snippets < <(
             awk 'match($0, /^SNIPPET:([^:]+):(.*)$/, m) { print m[1] }' $tool_file
@@ -369,7 +369,7 @@ esac
 
 # Display the appropriate section based on the flag
 case "$flag" in
-    --all)
+    --all|all)
         echo -e "${COLOR_HEADER}=== $tool ===${COLOR_RESET}"
         # Process each section with compact spacing
         current_section=""
@@ -389,15 +389,15 @@ case "$flag" in
             # Skip empty lines
         done < "$tool_file"
         ;;
-    --brief)
+    --brief|brief)
         print_section "Brief Description"
         awk '/^# Brief description:/ {flag=1; next} /^# [A-Za-z]+:/ {flag=0} flag' "$tool_file"
         ;;
-    --ctf)
+    --ctf|ctf)
         print_section "CTF Tips"
         awk '/^# CTF Tips:/ {flag=1; next} /^# [A-Za-z]+:/ {flag=0} flag' "$tool_file"
         ;;
-    --snippet)
+    --snippets|snippets)
         print_section "Snippets"
         awk -v color_snippet="$COLOR_SNIPPET" -v color_reset="$COLOR_RESET" '
             /^# Snippet:/ {flag=1; next} 
@@ -405,11 +405,11 @@ case "$flag" in
             flag {print color_snippet $0 color_reset}
         ' "$tool_file"
         ;;
-    --flags)
+    --flags|flags)
         print_section "Common Flags/Options"
         awk '/^# Common Flags:/ {flag=1; next} /^# [A-Za-z]+:/ {flag=0} flag' "$tool_file"
         ;;
-    --notes)
+    --notes|notes)
         print_section "Notes"
         awk '/^# Notes:/ {flag=1; next} /^# [A-Za-z]+:/ {flag=0} flag' "$tool_file"
         ;;
